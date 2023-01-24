@@ -1,0 +1,12 @@
+﻿  main.cpp
+C:\Users\User\Documents\study\5 term\saod\lab_7\Sort.h(20,13): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab_7\main.cpp(12,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab_7\main.cpp(44,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab_7\Sort.h(78,42): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab_7\main.cpp(60): message : выполняется компиляция ссылки на экземпляр шаблон функции "void TourmentSort<int>(T [],int)"
+          with
+          [
+              T=int
+          ]
+C:\Users\User\Documents\study\5 term\saod\lab_7\Sort.h(82,26): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+  lab_7.vcxproj -> C:\Users\User\Documents\study\5 term\saod\lab_7\Debug\lab_7.exe
