@@ -1,0 +1,487 @@
+#ifndef AVLTREE_H
+#define AVLTREE_H
+#include "BinSTree.h"
+#include "AVLTreeNode.h"
+
+template <class T>
+class AVLTree : public BinSTree<T> {
+private:
+    // выделение памяти
+    AVLTreeNode<T>* GetAVLTreeNode(const T& item,
+        AVLTreeNode<T> * lptr, AVLTreeNode<T>* rptr);
+    // используется конструктором копирования и оператором присваивания
+    AVLTreeNode<T>* CopyTree(AVLTreeNode<T>* t);
+    // используется методами Insert и Delete для восстановления
+    // AVL-условий после операций включения/исключения
+    AVLTreeNode<T>* RotateLeft(AVLTreeNode<T>*& node); //вращение влево
+    AVLTreeNode<T>* RotateRight(AVLTreeNode<T>*& node); //вращение вправо
+
+    //функции для определения балансировки
+    int Height(AVLTreeNode<T>* node); //вычисление высоты узла
+    int BFactor(AVLTreeNode<T>* node); //вычисление баланса узла
+    void FixBF(AVLTreeNode<T>* node); //процедура пересчёта баланса узла
+
+    AVLTreeNode<T>* Balance(AVLTreeNode<T>* p); //функция балансировки
+    AVLTreeNode<T>* FindMin(AVLTreeNode<T>* p); //поиск минимального узла
+    AVLTreeNode<T>* RemoveMin(AVLTreeNode<T>* p); //удалить минимальный элемент
+
+    AVLTreeNode<T>* Add(AVLTreeNode<T>* p, T x); //рекурсивная функция добавления узла по ключу
+    AVLTreeNode<T>* Remove(AVLTreeNode<T>* p, int k); //рекурсивная функция удаления узла по ключу
+public:
+    // конструкторы
+    AVLTree();
+    AVLTree(const AVLTree<T>& tree);
+    // оператор присваивания
+    AVLTree<T>& operator= (const AVLTree<T>& tree);
+    // стандартные методы обработки списков
+    virtual void Insert(const T& item);
+    virtual void Delete(const T& item);
+};
+
+//разместить в памяти объект типа AVLTreeNode
+template<class T>
+inline AVLTreeNode<T>* AVLTree<T>::GetAVLTreeNode(const T& item, AVLTreeNode<T>* lptr, AVLTreeNode<T>* rptr){
+    AVLTreeNode<T>* p;
+    p = new AVLTreeNode<T>(item, lptr, rptr);
+    if (p == NULL) { // если во время выделения памяти произошла ошибка
+        cerr << "Ошибка выделения памяти!" << endl;
+        exit(1);
+    }
+    return p;
+}
+
+//функция копирования класса
+template<class T>
+inline AVLTreeNode<T>* AVLTree<T>::CopyTree(AVLTreeNode<T>* t){
+    AVLTreeNode<T>* newlptr, * newrptr, * newnode;
+    if (t == NULL) //если дерево пустое
+        return NULL; //тогда остановить рекурсивное прохождение
+    //функция СоруTree проверяет наличие левого потомка
+    if (t->Left() != NULL)
+        newlptr = CopyTree(t->Left()); //если он есть, создается его копия
+    else newlptr = NULL; //в противном случае возвращается NULL
+    //и также проверка на правого потомка
+    if (t->Right() != NULL)
+        newrptr = CopyTree(t->Right());
+    else newrptr = NULL;
+    //построика нового дерева снизу вверх
+    newnode = GetAVLTreeNode(t->data, newlptr, newrptr); //сначала создавая двух потомков, а затем их родителя
+    newnode->balanceFactor = t->GetBF(); //передаём баланс
+    return newnode; //вернуть указатель на вновь созданное дерево
+}
+
+//вращение вправо
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::RotateRight(AVLTreeNode<T>*& p) { //правый поворот вокруг p
+    AVLTreeNode<T>* q = p->LeftLink; //итоговый узел = левый сын родителя
+    p->LeftLink = (q->RightLink); //левый сын теперь правый потомок сына
+    q->RightLink = (p); //а правый потомок сына = родитель
+    //пересчитываем балансы узлов
+    this->FixBF(p);
+    this->FixBF(q);
+    return q; //возвращаем повёрнутый узел
+}
+
+//вправо влево
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::RotateLeft(AVLTreeNode<T>*& p) { //левый поворот вокруг p
+    AVLTreeNode<T>* q = p->RightLink; //итоговый узел = правый сын родителя
+    p->RightLink = (q->LeftLink); //правый сын теперь левый потомок сына
+    q->LeftLink = (p); //а левый потомок сына = родитель
+    //пересчитываем балансы узлов
+    this->FixBF(p);
+    this->FixBF(q);
+    return q; //возвращаем повёрнутый узел
+}
+
+//вычисление высоты узла
+template <class T>
+int AVLTree<T>::Height(AVLTreeNode<T>* node) {
+    if (node != NULL) return node->GetBF(); //если узел не пустой
+    return 0;
+}
+
+//вычисление баланса узла
+template <class T>
+int AVLTree<T>::BFactor(AVLTreeNode<T>* node){
+    //возвращаем баланс как разницу высот
+    return this->Height(node->RightLink) - this->Height(node->LeftLink);
+}
+
+//процедура пересчёта баланса узла
+template <class T>
+void AVLTree<T>::FixBF(AVLTreeNode<T>* node){
+    int hl = this->Height(node->LeftLink); //высота левого потомка
+    int hr = this->Height(node->RightLink); //высота правого потомка
+    node->balanceFactor = ((hl > hr ? hl : hr) + 1); //обновляем поле
+}
+
+//функция балансировки узла
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::Balance(AVLTreeNode<T>* p){
+    this->FixBF(p); //обновляем высоту
+    if (this->BFactor(p) == 2){ //если наклонено вправо
+        if (this->BFactor(p->RightLink) < 0) //если нужен двойной поворот
+            p->RightLink = (this->RotateRight(p->RightLink));
+        return this->RotateLeft(p); //вращаем влево
+    }
+    if (this->BFactor(p) == -2){ //если наклонено влево
+        if (this->BFactor(p->LeftLink) > 0) //если нужен двойной поворот
+            p->LeftLink = (this->RotateLeft(p->LeftLink));
+        return this->RotateRight(p); //вращаем вправо
+    }
+    return p; //иначе балансировка не нужна
+}
+
+//рекурсивная функция добавления узла
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::Add(AVLTreeNode<T>* p, T x) { // вставка ключа k в дерево с корнем p
+    if (!p) return GetAVLTreeNode(x, NULL, NULL); //если пустой узел, то создаём узел
+    if (x < p->data) //выбор направления вставки
+        p->LeftLink = (this->Add(p->LeftLink, x));
+    else
+        p->RightLink = (this->Add(p->RightLink, x));
+    return this->Balance(p); //возвращаем сбалансированный узел
+}
+
+//поиск минимального узла
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::FindMin(AVLTreeNode<T>* p) {
+    return p->LeftLink ? this->FindMin(p->LeftLink) : p;
+}
+
+//рекурсивная функция удаления узла по ключу
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::Remove(AVLTreeNode<T>* p, int k){
+    if (!p) return 0; //если нечего удалять
+    if (k < p->data) //выбор направления удаления
+        p->LeftLink = this->Remove(p->LeftLink, k);
+    else if (k > p->data)
+        p->RightLink = this->Remove(p->RightLink, k);
+    else { //если узел найден
+        //сохраняем потомков удаляемого узла
+        AVLTreeNode<T>* q = p->LeftLink;
+        AVLTreeNode<T>* r = p->RightLink;
+        if (!r) return q; //если нет правого узла, то возвращаем левый
+        AVLTreeNode<T>* min = this->FindMin(r); //ищем минимальный узел
+        min->RightLink = this->RemoveMin(r); //удаляем минимальный узел и сохраняем его правого потомка
+        min->LeftLink = q; //присоединяем левого потомка удаляемого узла
+        if (p != this->root) this->FreeTreeNode(p); //если удаляемый узел не корень
+        else { //иначе переопределяем корень
+            this->root = min;
+            this->FreeTreeNode(p);
+        }
+        return this->Balance(min); //возвращаем сбалансированный новый узел
+    }
+    return this->Balance(p); //возвращаем обновлённый узел
+}
+
+//удаление узла с минимальным ключом из дерева p
+template <class T>
+AVLTreeNode<T>* AVLTree<T>::RemoveMin(AVLTreeNode<T>* p) {
+    if (p->LeftLink == NULL) //если нет левого потомка
+        return p->RightLink; //то возвращаем правого
+    p->LeftLink = this->RemoveMin(p->LeftLink); //спускаемся влево
+    return this->Balance(p); //возвращаем сбалансированный узел
+}
+
+//пустой конструктор
+template<class T>
+inline AVLTree<T>::AVLTree(){
+    this->size = 0; this->root = NULL; this->current = NULL;
+}
+
+//конструктор копирования
+template<class T>
+inline AVLTree<T>::AVLTree(const AVLTree<T>& tree){
+    this = tree;
+}
+
+//переопределение присваивания
+template<class T>
+inline AVLTree<T>& AVLTree<T>::operator=(const AVLTree<T>& tree){
+    if (this == &tree) return *this;
+    this->ClearList(); //очистка дерева
+    this->root = this->CopyTree((AVLTreeNode<T>*)tree.root); //копируем корень дерева
+    this->current = this->root; //смещаем указатель на корень
+    this->size = tree.size; //копируем кол-во элементов
+    return *this; //возвращаем
+}
+
+//метод вставки
+template<class T>
+inline void AVLTree<T>::Insert(const T& item){
+    this->root = this->Add((AVLTreeNode<T>*)this->root, item);
+    this->size++; //увеличиваем счётчик
+}
+
+//метод удаления
+template<class T>
+inline void AVLTree<T>::Delete(const T& item){
+    this->root = this->Remove((AVLTreeNode<T>*)this->root, item);
+    this->size--; //уменьшаем счётчик
+}
+
+
+//горизонтальная печать дерева на экран
+template <class T>
+void PrintTreeB(AVLTreeNode<T>* t, int level) {
+    if (t != NULL) { //пока указатель не пуст
+        PrintTree(t->Right(), level+1); //печатаем правое поддерево
+        IndentBlanks(6 * level); //вставка пробелов и выравнивание
+        cout << t->data << endl;
+        PrintTree(t->Left(), level+1); //печатаем левое поддерево
+    }
+}
+
+//горизонтальная печать дерева в файл
+template <class T>
+void PrintTreeFile(AVLTreeNode<T>* t, int level,string s1) {
+    if (t != NULL) { //пока указатель не пуст
+        ofstream f(s1, ios_base::app);
+        PrintTreeFile(t->Right(), level+1,s1); //печатаем правое поддерево
+        for (int i = 0; i < 6*level; i++){
+            f << " ";
+        }
+        f<<t->data<<endl;
+        PrintTreeFile(t->Left(), level+1,s1); //печатаем левое поддерево
+    }
+}
+
+
+#ifndef AVLTREENODE_H
+#define AVLTREENODE_H
+#include "TreeNode.h"
+
+template <class T>
+class AVLTreeNode : public TreeNode<T> {
+private:
+    int balanceFactor; //высота узла
+    AVLTreeNode<T>* LeftLink;
+    AVLTreeNode<T>* RightLink;
+public:
+    //конструктор
+    AVLTreeNode(const T& item, AVLTreeNode<T>* lptr = NULL,
+        AVLTreeNode<T>* rptr = NULL, int balfac = 1);
+    ~AVLTreeNode() { delete LeftLink, delete RightLink; }
+    //возвратить левый/правый указатель узла типа TreeNode,
+    //в качестве указателя узла типа AVLTreeNode; выполнить
+    //приведение типов
+    AVLTreeNode<T>* Left(void) const;
+    AVLTreeNode<T>* Right(void) const;
+    //метод для доступа к новому полю данных
+    int GetBF(void);
+    //методы класса AVLTree должны иметь доступ к Left и Right
+    template<class > friend class AVLTree;
+};
+
+//конструктор
+template<class T>
+inline AVLTreeNode<T>::AVLTreeNode(const T& item, AVLTreeNode<T>* lptr, AVLTreeNode<T>* rptr, int balfac)
+    : TreeNode<T>(item,(TreeNode<T>*)lptr,(TreeNode<T>*)rptr),balanceFactor(balfac){
+    LeftLink = (AVLTreeNode<T>*) this->TreeNode<T>::Left();
+    RightLink = (AVLTreeNode<T>*) this->TreeNode<T>::Right();
+}
+
+//геттер левого узла
+template<class T>
+inline AVLTreeNode<T>* AVLTreeNode<T>::Left(void) const {
+    return LeftLink;
+}
+
+//геттер правого узла
+template<class T>
+inline AVLTreeNode<T>* AVLTreeNode<T>::Right(void) const {
+    return RightLink;
+}
+
+//геттер высоты узла
+template<class T>
+inline int AVLTreeNode<T>::GetBF(void) {
+    return this->balanceFactor;
+}
+
+
+#include <iostream>
+#include <fstream>
+#include <time.h>
+#include "AVLTree.h"
+using namespace std;
+
+//загрузить массив, бинарное поисковое дерево и AVL-дерево
+//одинаковыми множествами, состоящими из п случайных чисел от 0 до 999
+void SetupLists(BinSTree<int>& Tree1, AVLTree<int>& Tree2,
+    int A[], int n) {
+    int i;
+    srand(time(0));
+    for (i = 0; i < n; i++) {
+        A[i] = rand() % 1000; //запомнить случайное число в массиве А
+        Tree1.Insert(A[i]); //а также включить его в бинарное дерево поиска
+        Tree2.Insert(A[i]); // и в AVL-дерево
+    }
+}
+
+//расчёт длины поиска элемента
+template <class T>
+void PathLenght(TreeNode<T>* t, long& totallenght, int item) {
+    if (t==NULL || t->data==item) //если пустой узел или найден ключ
+        return;
+    else {
+        totallenght++; //пройден ещё один узел
+        if (item < t->data) //выбор направления поиска
+            PathLenght(t->Left(), totallenght, item);
+        else PathLenght(t->Right(), totallenght, item);
+    }
+}
+
+int main(){
+    long total_BST = 0, total_AVL = 0; //длина поиска деревьев
+    int n = 10; //кол-во узлов
+    ofstream fout; //файл с результатом
+    fout.open("Result.txt");
+    int * A = new int[n] {822,655,799,299,199,687,671,146,431,320};
+    BinSTree<int> binT; //бинарное дерево поиска
+    AVLTree<int> avlT, avlT_c; //AVL-дерево
+    //ручная вставка
+    for (int i = 0; i < n; i++) {
+        binT.Insert(A[i]);
+        avlT.Insert(A[i]);
+    }
+    //отображаем очередь
+    cout << "Queue: " << endl; fout << "Queue: " << endl;
+    for (int i = 0; i<n; i++) {
+        if (i % 10 == 0 && i >= 10) cout << endl; //10 элементов в строке
+        cout << A[i] << " ; "; fout << A[i] << " ; ";
+    }
+    //вывод деревьев на экран
+    cout << endl << "Bin " << endl;
+    fout << endl << "Bin " << endl;
+    binT.PrintTreeB(0);
+    binT.PrintTreeBFile(0,"res.txt");
+    cout << endl << "AVL " << endl;
+    fout << endl << "AVL " << endl;
+    avlT.PrintTreeB(0);
+    avlT.PrintTreeBFile(0,"res.txt");
+    avlT_c = avlT;
+    //удаление листового узла
+    int key = 146;//431;
+    avlT_c.Delete(key);
+    cout << endl << "Del_List " << key << "): " << endl;
+    fout << endl << "Del_List" << key << "): " << endl;
+    avlT_c.PrintTreeB(0);
+    avlT_c.PrintTreeBFile(0,"res.txt");
+    //удаление промежуточного узла
+    key = 320;
+    avlT_c.Delete(key);
+    cout << endl << "DeL_Center " << key << "): " << endl;
+    fout << endl << "DeL_Center " << key << "): " << endl;
+    avlT_c.PrintTreeB(0);
+    avlT_c.PrintTreeBFile(0,"res.txt");
+    //удаление корневого узла
+    key = 655;
+    avlT_c.Delete(key);
+    cout << endl << "DEL ROOT " << key << "): " << endl;
+    fout << endl << "DEL ROOT " << key << "): " << endl;
+    avlT_c.PrintTreeB(0);
+    avlT_c.PrintTreeBFile(0,"res.txt");
+
+    /* программа вычисления средней длины поиска*/
+    int n2=1000; //100 или 1000
+    total_AVL = total_BST = 0; //обнуляем переменные результата
+    A = new int[n2]; //перезадаём массив
+    SetupLists(binT, avlT_c, A, n2); //заполняем деревья
+    //начинаем высчитывать среднюю длину поиска
+    for (int i = 0; i < n2; i++) {
+        PathLenght(binT.GetRoot(), total_BST, A[i]);
+        PathLenght(avlT_c.GetRoot(), total_AVL, A[i]);
+    }
+    //выводим результат
+    cout << endl << "- Program -" << endl;
+    fout << endl << "- Program -" << endl;
+    cout << "Size = " << n2 << endl;
+    fout << "Size = " << n2 << endl;
+    cout << "Depth Bin = " << binT.DepthB() << endl;
+    cout << "Lengths Find = "
+        << float(total_BST) / n2 << endl;
+    cout << "Depth AVL = " << avlT_c.DepthB() << endl;
+    cout << "Lenghts Find AVL = "
+        << float(total_AVL) / n2 << endl;
+
+    fout << "Depth Bin = " << binT.DepthB() << endl;
+    fout << "Lengths Find = "
+        << float(total_BST) / n2 << endl;
+    fout << "Depth AVL = " << avlT_c.DepthB() << endl;
+    fout << "Lenghts Find AVL = "
+        << float(total_AVL) / n2 << endl;
+
+    delete[] A;
+    fout.close();
+    return 0;
+}
+
+Queue:
+822 ; 655 ; 799 ; 299 ; 199 ; 687 ; 671 ; 146 ; 431 ; 320 ;
+Bin
+822
+            799
+                  687
+                        671
+      655
+                  431
+                        320
+            299
+                  199
+                        146
+AVL
+            822
+      799
+            687
+                  671
+655
+                  431
+            320
+                  299
+      199
+            146
+Del_List 146:
+            822
+      799
+            687
+                  671
+655
+                  
+            431
+                  
+      320         299
+            199
+
+DeL_Center 320:
+            822
+      799
+            687
+                  
+655
+                  671
+            431
+                  
+      299
+            199
+
+DEL ROOT 655:
+            822
+      799
+            687
+                  
+671
+                  
+            431
+                  
+      299
+            199
+
+- Program -
+Size = 1000
+Depth Bin = 20
+Lengths Find = 9.794
+Depth AVL = 11
+Lenghts Find AVL = 8.34
