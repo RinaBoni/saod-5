@@ -1,0 +1,7 @@
+﻿  lab2.cpp
+C:\Users\User\Documents\study\5 term\saod\lab2\lab2.cpp(14,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab2\TreeNode.h(326,21): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab2\TreeNode.h(351): message : выполняется компиляция ссылки на экземпляр шаблон функции "void LevelScan<int>(TreeNode<int> *,std::queue<int,std::deque<int,std::allocator<int>>> &,std::queue<Info,std::deque<Info,std::allocator<Info>>> &,int,int)"
+C:\Users\User\Documents\study\5 term\saod\lab2\lab2.cpp(55): message : выполняется компиляция ссылки на экземпляр шаблон функции "void PrintVTreeFile<int>(TreeNode<int> *,int,int,void (__cdecl *)(std::queue<int,std::deque<int,std::allocator<int>>> &,std::queue<Info,std::deque<Info,std::allocator<Info>>> &,std::string),std::string)"
+C:\Users\User\Documents\study\5 term\saod\lab2\TreeNode.h(331,21): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+  lab2.vcxproj -> C:\Users\User\Documents\study\5 term\saod\lab2\x64\Debug\lab2.exe
