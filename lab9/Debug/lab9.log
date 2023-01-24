@@ -1,0 +1,3 @@
+﻿  lab9.cpp
+C:\Users\User\Documents\study\5 term\saod\lab9\AVLTree.h(77,9): error C2760: синтаксическая ошибка: непредвиденный токен "идентификатор"; требуется ";"
+C:\Users\User\Documents\study\5 term\saod\lab9\lab9.cpp(12,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
