@@ -1,0 +1,4 @@
+﻿  main.cpp
+C:\Users\User\Documents\study\5 term\saod\lab8\Sort.h(20,13): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\User\Documents\study\5 term\saod\lab8\main.cpp(12,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+  lab8.vcxproj -> C:\Users\User\Documents\study\5 term\saod\lab8\Debug\lab8.exe
